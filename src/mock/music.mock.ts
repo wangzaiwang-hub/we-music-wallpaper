@@ -31,12 +31,17 @@ async function getAudioDuration(url: string): Promise<number> {
 // 异步生成歌曲列表
 async function generateSongs(): Promise<Song[]> {
   const songPromises = Object.keys(musicModules).map(async (path) => {
-    const url = musicModules[path];
+    let url = musicModules[path];
+    // 在生产环境中，Vite会将URL处理为相对路径，但我们需要的是从根目录开始的绝对路径
+    // 我们通过移除'/public'来修正它，使其在部署后也能正确工作
+    if (import.meta.env.PROD) {
+      url = url.replace('/public', '');
+    }
     const duration = await getAudioDuration(url);
     return {
       id: path, // 使用路径作为唯一ID
       name: getSongName(path),
-      url: url.replace('/public', ''), // 关键改动：移除URL中的/public前缀
+      url: url, 
       duration: duration,
       artist: '未知艺术家', // 暂时留空
     };

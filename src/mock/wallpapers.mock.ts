@@ -10,7 +10,10 @@ function getFileName(path: string): string {
 // 动态导入静态壁纸（图片）
 const staticModules = import.meta.glob('/public/wallpapers/static/*.*', { eager: true, as: 'url' });
 const staticWallpapers: Wallpaper[] = Object.keys(staticModules).map((path, index) => {
-  const url = staticModules[path];
+  let url = staticModules[path];
+  if (import.meta.env.PROD) {
+    url = url.replace('/public', '');
+  }
   return {
     id: index,
     name: getFileName(path),
@@ -24,7 +27,10 @@ const staticWallpapers: Wallpaper[] = Object.keys(staticModules).map((path, inde
 // 动态导入动态壁纸（视频）
 const dynamicModules = import.meta.glob('/public/wallpapers/dynamic/*.*', { eager: true, as: 'url' });
 const dynamicWallpapers: Wallpaper[] = Object.keys(dynamicModules).map((path, index) => {
-  const url = dynamicModules[path];
+  let url = dynamicModules[path];
+  if (import.meta.env.PROD) {
+    url = url.replace('/public', '');
+  }
   return {
     // ID 从静态壁纸的数量后开始，确保唯一性
     id: staticWallpapers.length + index,

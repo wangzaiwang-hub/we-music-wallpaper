@@ -18,7 +18,10 @@ function getFileName(path: string): string {
 
 // 动态生成音轨列表
 export const audioTracks: readonly AudioTrack[] = Object.keys(audioModules).map((path, index) => {
-  const url = audioModules[path];
+  let url = audioModules[path];
+  if (import.meta.env.PROD) {
+    url = url.replace('/public', '');
+  }
   const name = getFileName(path);
 
   return {
