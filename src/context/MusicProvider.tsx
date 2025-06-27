@@ -64,6 +64,20 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     setIsPlaying(true);
   }, []);
 
+  const handleCanPlay = () => {
+    if (audioRef.current && currentSong) {
+      const newDuration = audioRef.current.duration;
+      if (newDuration > 0 && newDuration !== currentSong.duration) {
+        const updatedSong = { ...currentSong, duration: newDuration };
+        setCurrentSong(updatedSong);
+
+        // 更新library和playlist中的时长
+        setPlaylist(prev => prev.map(s => s.id === updatedSong.id ? updatedSong : s));
+        setLibrary(prev => prev.map(s => s.id === updatedSong.id ? updatedSong : s));
+      }
+    }
+  };
+
   const togglePlay = () => {
     if (isPlaying) {
       audioRef.current.pause();
@@ -107,6 +121,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       }
     };
     audio.addEventListener('ended', handleSongEnd);
+    audio.addEventListener('canplay', handleCanPlay);
     
     const updateProgress = () => {
       setProgress(audio.currentTime);
@@ -126,6 +141,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     return () => {
       audio.removeEventListener('ended', handleSongEnd);
       audio.removeEventListener('timeupdate', updateProgress);
+      audio.removeEventListener('canplay', handleCanPlay);
       unregisterPlaying('music-player');
     };
   }, [isPlaying, currentSong, playlist, playbackMode, playNext]);

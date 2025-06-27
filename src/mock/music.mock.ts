@@ -1,10 +1,7 @@
 import { Song } from '@/lib/types';
 
-// 动态导入所有音乐文件
-const musicModules = import.meta.glob('/public/music/*.*', {
-  eager: true,
-  as: 'url',
-});
+// 动态导入所有音乐文件，【重要】移除 eager: true
+const musicModules = import.meta.glob('/public/music/*.*');
 
 // 辅助函数：从文件路径中提取并格式化名称
 function getSongName(path: string): string {
@@ -31,19 +28,20 @@ async function getAudioDuration(url: string): Promise<number> {
 // 异步生成歌曲列表
 async function generateSongs(): Promise<Song[]> {
   const songPromises = Object.keys(musicModules).map(async (path) => {
-    let url = musicModules[path];
-    // 在生产环境中，Vite会将URL处理为相对路径，但我们需要的是从根目录开始的绝对路径
-    // 我们通过移除'/public'来修正它，使其在部署后也能正确工作
+    // 动态导入模块以获取URL
+    const module = await musicModules[path]();
+    let url = (module as any).default;
+
     if (import.meta.env.PROD) {
       url = url.replace('/public', '');
     }
-    const duration = await getAudioDuration(url);
+
     return {
-      id: path, // 使用路径作为唯一ID
+      id: path,
       name: getSongName(path),
-      url: url, 
-      duration: duration,
-      artist: '未知艺术家', // 暂时留空
+      url: url,
+      duration: 0, // 时长将在播放时动态获取
+      artist: '未知艺术家',
     };
   });
 

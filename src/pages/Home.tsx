@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { AnimatePresence, motion, PanInfo } from 'framer-motion';
 import Clock from '@/components/Clock';
 import Timer from '@/components/Timer';
@@ -10,12 +10,27 @@ import AudioTrackPlayer from '@/components/AudioTrackPlayer';
 import MusicDrawer from '@/components/MusicDrawer';
 import { Github } from 'lucide-react';
 import { usePlaybackStatus } from '@/context/PlaybackStatusProvider';
+import { songsPromise } from '@/mock/music.mock';
+import { wallpapersPromise } from '@/mock/wallpapers.mock';
 
 type Widget = {
   id: string;
   type: 'clock' | 'timer';
   position: { x: number; y: number };
 };
+
+function LoadingIndicator() {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="text-white text-2xl font-bold mb-4">
+        正在加载资源...
+      </div>
+      <div className="text-white/80 text-lg">
+        资源文件较多，首次加载可能需要一些时间，请稍候。
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const { isAnyAudioPlaying } = usePlaybackStatus();
@@ -24,6 +39,8 @@ export default function Home() {
   const [topOpen, setTopOpen] = useState(false);
   const [bottomOpen, setBottomOpen] = useState(false);
   const [widgets, setWidgets] = useState<Widget[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
   const constraintsRef = useRef(null);
 
   // --- New Timer Logic ---
@@ -61,7 +78,7 @@ export default function Home() {
       type,
       position: {
         x: window.innerWidth / 2 - 128, // 128 is half of widget width 256px
-        y: window.innerHeight / 2 - 100, // Approximate half height
+        y: window.innerHeight / 2 - 150,
       },
     };
     setWidgets((prev) => [...prev, newWidget]);
@@ -98,8 +115,29 @@ export default function Home() {
     return null;
   };
 
+  useEffect(() => {
+    Promise.all([songsPromise, wallpapersPromise]).finally(() => {
+      setIsLoading(false);
+    });
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    const savedWidgets = localStorage.getItem('desktop-widgets');
+    if (savedWidgets) {
+      setWidgets(JSON.parse(savedWidgets));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('desktop-widgets', JSON.stringify(widgets));
+  }, [widgets]);
+
   return (
     <div ref={constraintsRef} className="relative h-screen w-screen overflow-hidden">
+      <AnimatePresence>
+        {isLoading && <LoadingIndicator />}
+      </AnimatePresence>
       {/* Watermark Logo */}
       <div className="pointer-events-none absolute top-8 left-8 z-0 flex flex-col items-center gap-2">
         <img

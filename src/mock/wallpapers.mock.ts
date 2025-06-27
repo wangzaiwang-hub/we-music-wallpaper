@@ -8,39 +8,55 @@ function getFileName(path: string): string {
 }
 
 // 动态导入静态壁纸（图片）
-const staticModules = import.meta.glob('/public/wallpapers/static/*.*', { eager: true, as: 'url' });
-const staticWallpapers: Wallpaper[] = Object.keys(staticModules).map((path, index) => {
-  let url = staticModules[path];
-  if (import.meta.env.PROD) {
-    url = url.replace('/public', '');
-  }
-  return {
-    id: index,
-    name: getFileName(path),
-    url: url,
-    thumbnail: url,
-    isDynamic: false,
-    aspectRatio: '16:9', // 默认值
-  };
-});
+const staticModules = import.meta.glob('/public/wallpapers/static/*.*');
+const staticWallpapers: Promise<Wallpaper[]> = Promise.all(
+  Object.keys(staticModules).map(async (path, index) => {
+    const module = await staticModules[path]();
+    let url = (module as any).default;
+    if (import.meta.env.PROD) {
+      url = url.replace('/public', '');
+    }
+    return {
+      id: index,
+      name: getFileName(path),
+      url: url,
+      thumbnail: url,
+      isDynamic: false,
+      aspectRatio: '16:9', // 默认值
+    };
+  })
+);
 
 // 动态导入动态壁纸（视频）
-const dynamicModules = import.meta.glob('/public/wallpapers/dynamic/*.*', { eager: true, as: 'url' });
-const dynamicWallpapers: Wallpaper[] = Object.keys(dynamicModules).map((path, index) => {
-  let url = dynamicModules[path];
-  if (import.meta.env.PROD) {
-    url = url.replace('/public', '');
-  }
-  return {
-    // ID 从静态壁纸的数量后开始，确保唯一性
-    id: staticWallpapers.length + index,
-    name: getFileName(path),
-    url: url,
-    thumbnail: url, // 视频的缩略图直接指向视频本身，浏览器会显示第一帧
-    isDynamic: true,
-    aspectRatio: '16:9', // 默认值
-  };
-});
+const dynamicModules = import.meta.glob('/public/wallpapers/dynamic/*.*');
+const dynamicWallpapers: Promise<Wallpaper[]> = Promise.all(
+  Object.keys(dynamicModules).map(async (path, index) => {
+    const module = await dynamicModules[path]();
+    let url = (module as any).default;
+    if (import.meta.env.PROD) {
+      url = url.replace('/public', '');
+    }
+    return {
+      // ID 从静态壁纸的数量后开始，确保唯一性
+      id: 0, // Placeholder, will be updated
+      name: getFileName(path),
+      url: url,
+      thumbnail: url,
+      isDynamic: true,
+      aspectRatio: '16:9', // 默认值
+    };
+  })
+);
 
 // 合并并导出所有壁纸
-export const wallpapers: Wallpaper[] = [...staticWallpapers, ...dynamicWallpapers];
+export const wallpapersPromise: Promise<Wallpaper[]> = (async () => {
+  const staticList = await staticWallpapers;
+  const dynamicList = await dynamicWallpapers;
+  
+  // 更新动态壁纸的ID，确保唯一
+  dynamicList.forEach((wallpaper, index) => {
+    wallpaper.id = staticList.length + index;
+  });
+
+  return [...staticList, ...dynamicList];
+})();
