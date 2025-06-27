@@ -34,6 +34,7 @@ function getPlugins() {
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,mp4,jpg,webp,woff,woff2}'],
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|webp|mp4|mp3|ico|woff|woff2)$/,

@@ -5,7 +5,7 @@ import Timer from '@/components/Timer';
 import HotZone from '@/components/HotZone';
 import WallpaperGallery from '@/components/WallpaperGallery';
 import AudioControl from '@/components/AudioControl';
-import { audioTracks } from '@/mock/audioTracks.mock';
+import { audioTracks, audioTracksPromise } from '@/mock/audioTracks.mock';
 import AudioTrackPlayer from '@/components/AudioTrackPlayer';
 import MusicDrawer from '@/components/MusicDrawer';
 import { Github } from 'lucide-react';
@@ -116,7 +116,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    Promise.all([songsPromise, wallpapersPromise]).finally(() => {
+    Promise.all([songsPromise, wallpapersPromise, audioTracksPromise]).finally(() => {
       setIsLoading(false);
     });
     setIsClient(true);

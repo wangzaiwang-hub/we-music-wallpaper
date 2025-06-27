@@ -1,8 +1,8 @@
 import { AudioTrack } from '@/lib/types';
 
 // 使用 Vite 的 import.meta.glob 功能动态导入所有音频文件
-// 【重要】加上 as: 'url' 来确保我们获取的是 URL 字符串
-const audioModules = import.meta.glob('/public/audio/*.*', { eager: true, as: 'url' });
+// 【重要】移除 eager 和 as, 改为懒加载
+const audioModules = import.meta.glob('/public/audio/*.*');
 
 // 从文件路径中提取文件名并格式化
 function getFileName(path: string): string {
@@ -16,19 +16,31 @@ function getFileName(path: string): string {
     .replace(/\b\w/g, char => char.toUpperCase());
 }
 
-// 动态生成音轨列表
-export const audioTracks: readonly AudioTrack[] = Object.keys(audioModules).map((path, index) => {
-  let url = audioModules[path];
-  if (import.meta.env.PROD) {
-    url = url.replace('/public', '');
-  }
-  const name = getFileName(path);
+const audioTracksPromise: Promise<AudioTrack[]> = Promise.all(
+  Object.keys(audioModules).map(async (path, index) => {
+    const module = await audioModules[path]();
+    let url = (module as any).default;
 
-  return {
-    id: index + 1,
-    name: name,
-    icon: 'fa-music', // 为所有动态加载的音轨使用一个默认图标
-    audioSrc: url,
-    volume: 0, // 核心改动：默认音量为 0
-  };
+    if (import.meta.env.PROD) {
+      url = url.replace('/public', '');
+    }
+    const name = getFileName(path);
+
+    return {
+      id: index + 1,
+      name: name,
+      icon: 'fa-music',
+      audioSrc: url,
+      volume: 0,
+    };
+  })
+);
+
+// 为了保持现有接口不变，我们导出一个立即解析的 Promise
+// 但实际上，这里的 audioTracks 将在稍后才被填充
+export let audioTracks: AudioTrack[] = [];
+audioTracksPromise.then(tracks => {
+  audioTracks = tracks;
 });
+
+export { audioTracksPromise };
