@@ -65,7 +65,7 @@
 
 1.  **克隆仓库**
     ```bash
-    git clone <your-repository-url>
+    git clone <[we-music-wallpaper](https://github.com/wangzaiwang-hub/we-music-wallpaper)>
     cd music-wallpaper
     ```
 
